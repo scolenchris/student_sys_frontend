@@ -1,0 +1,10 @@
+import axios from 'axios';
+
+// 指向你的 Flask 后端地址
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api',
+  timeout: 5000
+});
+
+export const loginApi = (data) => api.post('/auth/login', data);
+export const registerApi = (data) => api.post('/auth/register', data);
