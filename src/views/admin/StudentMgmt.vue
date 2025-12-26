@@ -3,21 +3,38 @@
     <div
       style="margin-bottom: 20px; display: flex; justify-content: space-between"
     >
-      <el-select
-        v-model="filterClassId"
-        placeholder="按班级筛选"
-        clearable
-        @change="fetchStudents"
-        style="width: 200px"
-      >
-        <el-option
-          v-for="c in classes"
-          :key="c.id"
-          :label="formatClassName(c)"
-          :value="c.id"
-        />
-      </el-select>
-      <el-button type="primary" @click="openDialog('add')">新增学生</el-button>
+      <div style="display: flex; gap: 10px">
+        <el-select
+          v-model="filterClassId"
+          placeholder="按班级筛选"
+          clearable
+          @change="fetchStudents"
+          style="width: 200px"
+        >
+          <el-option
+            v-for="c in classes"
+            :key="c.id"
+            :label="formatClassName(c)"
+            :value="c.id"
+          />
+        </el-select>
+      </div>
+
+      <div>
+        <el-upload
+          class="upload-demo"
+          action=""
+          :show-file-list="false"
+          :http-request="handleUpload"
+          accept=".xlsx, .xls"
+          style="display: inline-block; margin-right: 10px"
+        >
+          <el-button type="success">Excel 导入</el-button>
+        </el-upload>
+        <el-button type="primary" @click="openDialog('add')"
+          >新增学生</el-button
+        >
+      </div>
     </div>
 
     <el-table
@@ -183,6 +200,7 @@ import {
   addStudent,
   updateStudent,
   getClasses,
+  importStudentsExcel,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
 
@@ -309,4 +327,31 @@ onMounted(() => {
   fetchClasses();
   fetchStudents();
 });
+
+// 处理上传逻辑
+const handleUpload = async (param) => {
+  const formData = new FormData();
+  formData.append("file", param.file);
+
+  const loadingInstance = ElMessage.success({
+    message: "正在导入中，请稍候...",
+    duration: 0,
+  });
+
+  try {
+    const res = await importStudentsExcel(formData);
+    loadingInstance.close();
+
+    ElMessage.success(
+      `导入成功！新增: ${res.data.added} 人，更新: ${res.data.updated} 人`
+    );
+
+    // 导入后自动刷新班级列表(因为可能新增了班级)和学生列表
+    fetchClasses();
+    fetchStudents();
+  } catch (err) {
+    loadingInstance.close();
+    ElMessage.error(err.response?.data?.msg || "导入失败");
+  }
+};
 </script>

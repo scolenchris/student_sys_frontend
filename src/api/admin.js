@@ -30,3 +30,11 @@ export const getAssignments = () => api.get("/assignments");
 export const addAssignment = (data) => api.post("/assignments", data);
 export const deleteAssignment = (id) => api.delete(`/assignments/${id}`);
 export const getSubjects = () => api.get("/subjects"); //科目下拉框选择
+
+// --- 导入学生 Excel ---
+export const importStudentsExcel = (formData) =>
+  api.post("/students/import", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
