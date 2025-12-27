@@ -50,3 +50,9 @@ export const importTeachersExcel = (formData) =>
 // --- 重置教师密码 ---
 export const resetTeacherPassword = (teacherId) =>
   api.post(`/teachers/${teacherId}/reset_password`);
+
+// --- 考试发布管理 ---
+export const getExamTasks = (params) => api.get("/exam_tasks", { params });
+export const addExamTask = (data) => api.post("/exam_tasks", data);
+export const updateExamTask = (id, data) => api.put(`/exam_tasks/${id}`, data);
+export const deleteExamTask = (id) => api.delete(`/exam_tasks/${id}`);

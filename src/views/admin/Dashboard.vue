@@ -13,6 +13,7 @@
         <el-menu-item index="/admin/students">学籍管理</el-menu-item>
         <el-menu-item index="/admin/stats">成绩统计</el-menu-item>
         <el-menu-item index="/admin/assignments">任课分配</el-menu-item>
+        <el-menu-item index="/admin/exams">考试发布管理</el-menu-item>
         <el-menu-item @click="logout">退出登录</el-menu-item>
       </el-menu>
     </el-aside>
