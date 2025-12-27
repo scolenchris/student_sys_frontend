@@ -81,7 +81,7 @@
         min-width="80"
       />
 
-      <el-table-column label="操作" width="60" fixed="right">
+      <el-table-column label="操作" width="140" fixed="right">
         <template #default="scope">
           <el-button
             type="primary"
@@ -90,6 +90,14 @@
             @click="editTeacher(scope.row)"
             >编辑</el-button
           >
+          <el-popconfirm
+            title="确定将密码重置为 123456 吗?"
+            @confirm="handleResetPwd(scope.row.id)"
+          >
+            <template #reference>
+              <el-button type="danger" link size="small">重置密码</el-button>
+            </template>
+          </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
@@ -248,6 +256,7 @@ import {
   getClasses,
   getSubjects,
   importTeachersExcel,
+  resetTeacherPassword,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
 import { Delete } from "@element-plus/icons-vue";
@@ -342,6 +351,16 @@ const handleUpload = async (param) => {
   } catch (err) {
     loadingInstance.close();
     ElMessage.error(err.response?.data?.msg || "导入失败");
+  }
+};
+
+// 重置教师密码
+const handleResetPwd = async (id) => {
+  try {
+    const res = await resetTeacherPassword(id);
+    ElMessage.success(res.data.msg);
+  } catch (err) {
+    ElMessage.error(err.response?.data?.msg || "重置失败");
   }
 };
 

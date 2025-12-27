@@ -2,7 +2,9 @@
   <div class="login-container">
     <el-card class="login-card">
       <template #header>
-        <h2 style="text-align: center;">{{ isRegister ? '新用户注册' : '学生管理系统登录' }}</h2>
+        <h2 style="text-align: center">
+          {{ isRegister ? "新用户注册" : "学生管理系统登录" }}
+        </h2>
       </template>
 
       <el-form :model="form" label-width="80px">
@@ -26,11 +28,16 @@
         </el-form-item>
 
         <div class="btn-group">
-          <el-button type="primary" @click="handleSubmit" :loading="loading" style="width: 100%;">
-            {{ isRegister ? '提交申请' : '立即登录' }}
+          <el-button
+            type="primary"
+            @click="handleSubmit"
+            :loading="loading"
+            style="width: 100%"
+          >
+            {{ isRegister ? "提交申请" : "立即登录" }}
           </el-button>
-          <el-link @click="isRegister = !isRegister" style="margin-top: 15px;">
-            {{ isRegister ? '已有账号？去登录' : '没有账号？去注册申请' }}
+          <el-link @click="isRegister = !isRegister" style="margin-top: 15px">
+            {{ isRegister ? "已有账号？去登录" : "没有账号？去注册申请" }}
           </el-link>
         </div>
       </el-form>
@@ -39,27 +46,27 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-import { useRouter } from 'vue-router';
-import { loginApi, registerApi } from '../api/auth';
-import { ElMessage } from 'element-plus';
+import { ref, reactive } from "vue";
+import { useRouter } from "vue-router";
+import { loginApi, registerApi } from "../api/auth";
+import { ElMessage } from "element-plus";
 
 const router = useRouter();
 const isRegister = ref(false);
 const loading = ref(false);
 
 const form = reactive({
-  username: '',
-  password: '',
-  name: '',
-  role: 'teacher'
+  username: "",
+  password: "",
+  name: "",
+  role: "teacher",
 });
 
 const handleSubmit = async () => {
   if (!form.username || !form.password) {
-    return ElMessage.warning('请填写完整信息');
+    return ElMessage.warning("请填写完整信息");
   }
-  
+
   loading.value = true;
   try {
     if (isRegister.value) {
@@ -67,25 +74,35 @@ const handleSubmit = async () => {
       ElMessage.success(res.data.msg);
       isRegister.value = false; // 注册后切换到登录
     } else {
-      const res = await loginApi({ username: form.username, password: form.password });
-      localStorage.setItem('user_id', res.data.user_id);
-      localStorage.setItem('user_role', res.data.role);
-      localStorage.setItem('username', res.data.username);
-      ElMessage.success('登录成功');
+      const res = await loginApi({
+        username: form.username,
+        password: form.password,
+      });
+      localStorage.setItem("user_id", res.data.user_id);
+      localStorage.setItem("user_role", res.data.role);
+      localStorage.setItem("username", res.data.username);
+      if (res.data.must_change_password) {
+        ElMessage.warning("检测到您使用的是初始密码，请立即修改");
+        setTimeout(() => {
+          router.push("/change-password");
+        }, 500);
+        return; // 阻止后续跳转
+      }
+      ElMessage.success("登录成功");
       // 存储用户信息并跳转
-      localStorage.setItem('user_role', res.data.role);
+      localStorage.setItem("user_role", res.data.role);
       // router.push(res.data.role === 'admin' ? '/admin/dashboard' : '/teacher/dashboard');
       // router.push(res.data.role === 'admin' ? '/admin' : '/teacher');
       setTimeout(() => {
-        if (res.data.role === 'admin') {
-          router.push('/admin/approval');
+        if (res.data.role === "admin") {
+          router.push("/admin/approval");
         } else {
-          router.push('/teacher/scores'); // 直接跳转到子路由，不要只跳到 /teacher
+          router.push("/teacher/scores"); // 直接跳转到子路由，不要只跳到 /teacher
         }
       }, 100);
     }
   } catch (error) {
-    ElMessage.error(error.response?.data?.msg || '操作失败');
+    ElMessage.error(error.response?.data?.msg || "操作失败");
   } finally {
     loading.value = false;
   }

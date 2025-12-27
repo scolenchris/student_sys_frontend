@@ -46,3 +46,7 @@ export const importTeachersExcel = (formData) =>
       "Content-Type": "multipart/form-data",
     },
   });
+
+// --- 重置教师密码 ---
+export const resetTeacherPassword = (teacherId) =>
+  api.post(`/teachers/${teacherId}/reset_password`);
