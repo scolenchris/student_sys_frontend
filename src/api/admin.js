@@ -38,3 +38,11 @@ export const importStudentsExcel = (formData) =>
       "Content-Type": "multipart/form-data",
     },
   });
+
+// --- 导入老师信息 Excel ---
+export const importTeachersExcel = (formData) =>
+  api.post("/teachers/import", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });

@@ -1,6 +1,28 @@
 <template>
   <el-card>
-    <template #header><h3>教师详细信息管理</h3></template>
+    <template #header>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <h3>教师详细信息管理</h3>
+
+        <div>
+          <el-upload
+            class="upload-demo"
+            action=""
+            :show-file-list="false"
+            :http-request="handleUpload"
+            accept=".xlsx, .xls"
+          >
+            <el-button type="success">Excel 批量导入教师</el-button>
+          </el-upload>
+        </div>
+      </div>
+    </template>
 
     <el-table :data="teachers" border stripe size="small">
       <el-table-column prop="name" label="姓名" width="70" fixed />
@@ -19,6 +41,14 @@
             >否</span
           >
           <span v-else>{{ scope.row.head_teacher_desc }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="级长" min-width="80">
+        <template #default="scope">
+          <span v-if="scope.row.grade_leader_desc === '否'" style="color: #ccc"
+            >否</span
+          >
+          <span v-else>{{ scope.row.grade_leader_desc }}</span>
         </template>
       </el-table-column>
       <el-table-column label="科组长" min-width="80">
@@ -217,6 +247,7 @@ import {
   updateTeacher,
   getClasses,
   getSubjects,
+  importTeachersExcel,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
 import { Delete } from "@element-plus/icons-vue";
@@ -289,6 +320,28 @@ const saveTeacher = async () => {
     fetchData();
   } catch (err) {
     ElMessage.error("保存失败");
+  }
+};
+
+// 导入老师信息
+const handleUpload = async (param) => {
+  const formData = new FormData();
+  formData.append("file", param.file);
+
+  const loadingInstance = ElMessage.success({
+    message: "正在导入教师信息，请稍候...",
+    duration: 0,
+  });
+
+  try {
+    const res = await importTeachersExcel(formData);
+    loadingInstance.close();
+    ElMessage.success(res.data.msg);
+    // 导入完成后刷新列表
+    fetchData();
+  } catch (err) {
+    loadingInstance.close();
+    ElMessage.error(err.response?.data?.msg || "导入失败");
   }
 };
 
