@@ -1,7 +1,11 @@
 <template>
   <el-container class="layout-container">
     <el-aside width="200px">
-      <el-menu :router="true" default-active="/admin/approval" class="el-menu-vertical">
+      <el-menu
+        :router="true"
+        default-active="/admin/approval"
+        class="el-menu-vertical"
+      >
         <div class="logo">管理后台</div>
         <el-menu-item index="/admin/approval">用户审核</el-menu-item>
         <el-menu-item index="/admin/teachers">教师管理</el-menu-item>
@@ -12,23 +16,37 @@
         <el-menu-item @click="logout">退出登录</el-menu-item>
       </el-menu>
     </el-aside>
-    <el-main>
-      <router-view /> </el-main>
+    <el-main> <router-view /> </el-main>
   </el-container>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-const router = useRouter()
+import { useRouter } from "vue-router";
+const router = useRouter();
 const logout = () => {
-  localStorage.clear()
-  router.push('/')
-}
+  localStorage.clear();
+  router.push("/");
+};
 </script>
 
 <style scoped>
-.layout-container { height: 100vh; }
-.el-aside { background-color: #304156; color: #fff; }
-.logo { height: 60px; line-height: 60px; text-align: center; font-weight: bold; font-size: 18px; border-bottom: 1px solid #1f2d3d; }
-.el-menu { border-right: none; }
+.layout-container {
+  height: 100vh;
+}
+.el-aside {
+  background-color: #304156;
+  color: #fff;
+}
+.logo {
+  height: 60px;
+  line-height: 60px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+  border-bottom: 1px solid #1f2d3d;
+  color: black;
+}
+.el-menu {
+  border-right: none;
+}
 </style>
