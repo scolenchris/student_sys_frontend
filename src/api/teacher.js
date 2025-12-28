@@ -27,3 +27,18 @@ export const saveScores = (data) => api.post("/save_scores", data);
 // 获取可用考试
 export const getAvailableExams = (params) =>
   api.get("/available_exams", { params });
+
+// 导出成绩单 (Excel)
+export const exportScores = (params) =>
+  api.get("/export_scores", {
+    params,
+    responseType: "blob", //以此格式接收二进制流文件
+  });
+
+// 导入成绩单 (Excel)
+export const importScores = (formData) =>
+  api.post("/import_scores", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });

@@ -42,11 +42,36 @@
     </div>
 
     <div v-else>
-      <div class="exam-info">
-        当前录入：<el-tag>{{ currentExamInfo?.name }}</el-tag> 满分标准：<el-tag
-          type="warning"
-          >{{ currentExamInfo?.full_score }}分</el-tag
-        >
+      <div class="toolbar">
+        <div class="exam-info">
+          当前录入：<el-tag>{{ currentExamInfo?.name }}</el-tag>
+          满分标准：<el-tag type="warning"
+            >{{ currentExamInfo?.full_score }}分</el-tag
+          >
+        </div>
+
+        <div class="action-buttons">
+          <el-button type="success" plain @click="handleExport">
+            <el-icon><Download /></el-icon> 导出现有成绩/模板
+          </el-button>
+
+          <el-upload
+            class="upload-btn"
+            action=""
+            :show-file-list="false"
+            :http-request="handleImport"
+            accept=".xlsx, .xls"
+          >
+            <el-button type="primary" plain>
+              <el-icon><Upload /></el-icon> Excel 批量导入
+            </el-button>
+          </el-upload>
+        </div>
+      </div>
+
+      <div class="hint-text">
+        <el-icon style="vertical-align: middle"><check /></el-icon>
+        小提示：输入分数后按 <b>Enter (回车)</b> 可自动跳转下一行
       </div>
 
       <el-table :data="students" border stripe v-loading="loading">
@@ -61,6 +86,8 @@
               :precision="1"
               :controls="false"
               style="width: 100%"
+              :ref="(el) => setInputRef(el, scope.$index)"
+              @keydown.enter.prevent="handleEnter(scope.$index)"
             />
           </template>
         </el-table-column>
@@ -77,6 +104,54 @@
         </el-button>
       </div>
     </div>
+
+    <el-dialog
+      v-model="resultDialogVisible"
+      title="Excel 导入结果反馈"
+      width="600px"
+    >
+      <div style="margin-bottom: 15px">
+        <el-alert
+          v-if="importSummary.errors && importSummary.errors.length > 0"
+          title="导入部分完成，但发现以下问题，请务必核对！"
+          type="warning"
+          show-icon
+          :closable="false"
+        />
+        <el-alert
+          v-else
+          title="导入完全成功！"
+          type="success"
+          show-icon
+          :closable="false"
+        />
+        <p style="margin-top: 10px">
+          {{ importSummary.msg }}
+        </p>
+      </div>
+
+      <el-table
+        v-if="importSummary.errors && importSummary.errors.length > 0"
+        :data="importSummary.errors"
+        border
+        height="300"
+        style="width: 100%"
+      >
+        <el-table-column prop="row" label="Excel行号" width="100" />
+        <el-table-column prop="name" label="姓名" width="100" />
+        <el-table-column prop="msg" label="错误原因" show-overflow-tooltip>
+          <template #default="scope">
+            <span style="color: #f56c6c">{{ scope.row.msg }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <template #footer>
+        <el-button type="primary" @click="resultDialogVisible = false"
+          >知道了</el-button
+        >
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
@@ -84,28 +159,50 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
+import { Check, Download, Upload } from "@element-plus/icons-vue";
 import {
   getMyCourses,
   getScoreList,
   saveScores,
   getAvailableExams,
+  exportScores,
+  importScores,
 } from "../../api/teacher";
 
 const router = useRouter();
 const myCourses = ref([]);
-const selectedKey = ref(null); // 选中的 assignment_id
-const selectedCourseInfo = ref(null); // 选中的课程详情对象
-const examList = ref([]); // 可选的考试列表
-const selectedExamId = ref(null); // 选中的 exam_task_id
+const selectedKey = ref(null);
+const selectedCourseInfo = ref(null);
+const examList = ref([]);
+const selectedExamId = ref(null);
 const students = ref([]);
 const loading = ref(false);
 const saving = ref(false);
+
+// --- 导入导出相关状态 ---
+const resultDialogVisible = ref(false);
+const importSummary = ref({ msg: "", errors: [] });
+
+// 快捷键引用
+const scoreInputRefs = ref({});
 
 const currentExamInfo = computed(() => {
   return examList.value.find((e) => e.id === selectedExamId.value);
 });
 
-// 获取老师课程
+const setInputRef = (el, index) => {
+  if (el) scoreInputRefs.value[index] = el;
+};
+
+const handleEnter = (index) => {
+  const nextIndex = index + 1;
+  if (scoreInputRefs.value[nextIndex]) {
+    scoreInputRefs.value[nextIndex].focus();
+  } else {
+    ElMessage.success("已经是最后一位学生了");
+  }
+};
+
 const fetchMyCourses = async () => {
   const userId = localStorage.getItem("user_id");
   if (!userId) return router.push("/");
@@ -117,7 +214,6 @@ const fetchMyCourses = async () => {
   }
 };
 
-// 1. 课程切换 -> 获取可用考试列表
 const handleCourseChange = async (assignmentId) => {
   selectedExamId.value = null;
   students.value = [];
@@ -126,7 +222,6 @@ const handleCourseChange = async (assignmentId) => {
   );
   selectedCourseInfo.value = info;
 
-  // 获取该班级该科目下的考试
   try {
     const res = await getAvailableExams({
       class_id: info.class_id,
@@ -134,18 +229,17 @@ const handleCourseChange = async (assignmentId) => {
     });
     examList.value = res.data;
     if (examList.value.length === 0) {
-      ElMessage.info("管理员暂未发布该年级科目的任何考试");
+      ElMessage.info("暂无考试任务");
     }
   } catch (err) {
     ElMessage.error("获取考试列表失败");
   }
 };
 
-// 2. 考试切换 -> 获取学生成绩单
 const handleExamChange = async (examId) => {
   if (!selectedCourseInfo.value) return;
-
   loading.value = true;
+  scoreInputRefs.value = {}; // 重置引用
   try {
     const res = await getScoreList({
       class_id: selectedCourseInfo.value.class_id,
@@ -159,7 +253,6 @@ const handleExamChange = async (examId) => {
   }
 };
 
-// 3. 保存
 const saveAllScores = async () => {
   saving.value = true;
   try {
@@ -175,6 +268,65 @@ const saveAllScores = async () => {
     ElMessage.error(err.response?.data?.msg || "保存失败");
   } finally {
     saving.value = false;
+  }
+};
+
+// --- 导出逻辑 ---
+const handleExport = async () => {
+  if (!selectedCourseInfo.value || !selectedExamId.value) return;
+  try {
+    const res = await exportScores({
+      class_id: selectedCourseInfo.value.class_id,
+      exam_task_id: selectedExamId.value,
+    });
+
+    // 创建下载链接
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+
+    // 生成友好的文件名
+    const clsName = selectedCourseInfo.value.grade_class;
+    const subName = selectedCourseInfo.value.subject_name;
+    const examName = currentExamInfo.value?.name || "考试";
+    link.setAttribute("download", `${clsName}-${subName}-${examName}.xlsx`);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    ElMessage.error("导出失败");
+  }
+};
+
+// --- 导入逻辑 ---
+const handleImport = async (param) => {
+  const formData = new FormData();
+  formData.append("file", param.file);
+  formData.append("class_id", selectedCourseInfo.value.class_id);
+  formData.append("exam_task_id", selectedExamId.value);
+
+  const loadingInstance = ElMessage.success({
+    message: "正在导入并校验数据，请稍候...",
+    duration: 0,
+  });
+
+  try {
+    const res = await importScores(formData);
+    loadingInstance.close();
+
+    // 赋值给弹窗数据
+    importSummary.value = res.data.logs; // logs 包含 success, updated, errors[]
+    importSummary.value.msg = res.data.msg;
+
+    // 显示结果弹窗
+    resultDialogVisible.value = true;
+
+    // 导入后自动刷新表格，看到最新成绩
+    handleExamChange(selectedExamId.value);
+  } catch (err) {
+    loadingInstance.close();
+    ElMessage.error(err.response?.data?.msg || "导入失败");
   }
 };
 
@@ -196,10 +348,30 @@ onMounted(fetchMyCourses);
   text-align: center;
   color: #909399;
 }
-.exam-info {
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 15px;
+  background-color: #f5f7fa;
+  padding: 10px;
+  border-radius: 4px;
+}
+.exam-info {
   display: flex;
   gap: 15px;
   align-items: center;
+}
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+.upload-btn {
+  display: inline-block;
+}
+.hint-text {
+  margin-bottom: 10px;
+  color: #909399;
+  font-size: 13px;
 }
 </style>
