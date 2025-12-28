@@ -24,6 +24,10 @@ export const updateStudent = (id, data) => api.put(`/students/${id}`, data);
 // --- 成绩统计 ---
 export const getClassReport = (params) =>
   api.get("/stats/class_report", { params });
+export const getExamNames = (entry_year) =>
+  api.get("/stats/exam_names", { params: { entry_year } });
+export const getComprehensiveReport = (data) =>
+  api.post("/stats/comprehensive_report", data);
 
 // --- 科目登记 ---
 export const getAssignments = () => api.get("/assignments");
