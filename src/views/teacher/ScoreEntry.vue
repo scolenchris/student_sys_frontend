@@ -79,14 +79,12 @@
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column :label="`成绩 (0-${currentExamInfo?.full_score})`">
           <template #default="scope">
-            <el-input-number
+            <el-input
               v-model="scope.row.score"
-              :min="0"
-              :max="currentExamInfo?.full_score"
-              :precision="1"
-              :controls="false"
+              placeholder="输入分数或'缺考'"
               style="width: 100%"
               :ref="(el) => setInputRef(el, scope.$index)"
+              @blur="validateInput(scope.row, scope.$index)"
               @keydown.enter.prevent="handleEnter(scope.$index)"
             />
           </template>
@@ -327,6 +325,49 @@ const handleImport = async (param) => {
   } catch (err) {
     loadingInstance.close();
     ElMessage.error(err.response?.data?.msg || "导入失败");
+  }
+};
+
+const validateInput = (row, index) => {
+  // 1. 空值处理（允许暂时留空）
+  if (
+    row.score === null ||
+    row.score === undefined ||
+    String(row.score).trim() === ""
+  ) {
+    return;
+  }
+
+  const strVal = String(row.score).trim();
+
+  // 2. 检查是否为“缺考”
+  if (strVal === "缺考") {
+    // 格式化一下，去除可能的空格
+    row.score = "缺考";
+    return;
+  }
+
+  // 3. 检查是否为数字
+  const numVal = parseFloat(strVal);
+  const maxScore = currentExamInfo.value?.full_score || 100;
+
+  if (isNaN(numVal)) {
+    ElMessage.warning(
+      `第 ${index + 1} 行：输入格式错误，请输入有效数字或“缺考”`
+    );
+    // 错误时清空或保留原值，这里选择清空以提示用户
+    row.score = null;
+  } else {
+    // 4. 检查分数范围
+    if (numVal < 0 || numVal > maxScore) {
+      ElMessage.warning(
+        `第 ${index + 1} 行：分数 ${numVal} 超出范围 (0-${maxScore})`
+      );
+      row.score = null;
+    } else {
+      // 可选：格式化数字（例如去掉多余的0，保留1位小数等），视需求而定
+      // row.score = parseFloat(numVal.toFixed(1));
+    }
   }
 };
 

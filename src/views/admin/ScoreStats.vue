@@ -180,9 +180,15 @@
         align="center"
       >
         <template #default="scope">
-          <span v-if="scope.row.scores[sub] !== undefined">{{
-            scope.row.scores[sub]
-          }}</span>
+          <span
+            v-if="scope.row.scores[sub] === '缺考'"
+            style="color: #f56c6c; font-weight: bold"
+          >
+            缺考
+          </span>
+          <span v-else-if="scope.row.scores[sub] !== undefined">
+            {{ scope.row.scores[sub] }}
+          </span>
           <span v-else style="color: #ddd">-</span>
         </template>
       </el-table-column>
