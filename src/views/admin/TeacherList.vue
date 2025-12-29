@@ -10,7 +10,11 @@
       >
         <h3>教师详细信息管理</h3>
 
-        <div>
+        <div style="display: flex; gap: 10px">
+          <el-button type="warning" @click="handleExport">
+            <el-icon style="margin-right: 5px"><Download /></el-icon>
+            下载模板/备份
+          </el-button>
           <el-upload
             class="upload-demo"
             action=""
@@ -18,7 +22,10 @@
             :http-request="handleUpload"
             accept=".xlsx, .xls"
           >
-            <el-button type="success">Excel 批量导入教师</el-button>
+            <el-button type="success"
+              ><el-icon style="margin-right: 5px"><Upload /></el-icon>
+              Excel批量导入教师</el-button
+            >
           </el-upload>
         </div>
       </div>
@@ -257,9 +264,10 @@ import {
   getSubjects,
   importTeachersExcel,
   resetTeacherPassword,
+  exportTeachers,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
-import { Delete } from "@element-plus/icons-vue";
+import { Delete, Download, Upload } from "@element-plus/icons-vue";
 
 const teachers = ref([]);
 const classOptions = ref([]);
@@ -361,6 +369,25 @@ const handleResetPwd = async (id) => {
     ElMessage.success(res.data.msg);
   } catch (err) {
     ElMessage.error(err.response?.data?.msg || "重置失败");
+  }
+};
+
+const handleExport = async () => {
+  try {
+    const res = await exportTeachers();
+
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "教师信息表(含职务分配).xlsx");
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    ElMessage.error(err.response?.data?.msg || "导出失败");
   }
 };
 

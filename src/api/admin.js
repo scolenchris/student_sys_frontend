@@ -74,3 +74,9 @@ export const exportCourseAssignments = () =>
   api.get("/assignments/export", {
     responseType: "blob", // 重要：必须声明接收二进制流
   });
+
+// --- 导出教师信息 (Excel) ---
+export const exportTeachers = () =>
+  api.get("/teachers/export", {
+    responseType: "blob", // 必须声明接收二进制流
+  });
