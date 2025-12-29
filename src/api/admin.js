@@ -60,3 +60,17 @@ export const getExamTasks = (params) => api.get("/exam_tasks", { params });
 export const addExamTask = (data) => api.post("/exam_tasks", data);
 export const updateExamTask = (id, data) => api.put(`/exam_tasks/${id}`, data);
 export const deleteExamTask = (id) => api.delete(`/exam_tasks/${id}`);
+
+// --- 导入科目登记 Excel ---
+export const importCourseAssignmentsExcel = (formData) =>
+  api.post("/assignments/import", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+// --- 导出科目登记 Excel ---
+export const exportCourseAssignments = () =>
+  api.get("/assignments/export", {
+    responseType: "blob", // 重要：必须声明接收二进制流
+  });
