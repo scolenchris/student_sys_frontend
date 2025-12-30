@@ -76,15 +76,24 @@
       />
       <el-table-column prop="household_registration" label="户籍" width="80" />
 
-      <el-table-column label="操作" width="60" fixed="right">
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="scope">
           <el-button
             type="primary"
             link
             size="small"
             @click="openDialog('edit', scope.row)"
-            >编辑</el-button
           >
+            编辑
+          </el-button>
+          <el-button
+            type="warning"
+            link
+            size="small"
+            @click="handlePrintCert(scope.row)"
+          >
+            <el-icon><Document /></el-icon> 证明
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -201,8 +210,10 @@ import {
   updateStudent,
   getClasses,
   importStudentsExcel,
+  getStudentCertificate,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
+import { Document } from "@element-plus/icons-vue";
 
 // ... (保留 formatClassName, getStatusType 等辅助函数)
 const formatClassName = (c) =>
@@ -352,6 +363,31 @@ const handleUpload = async (param) => {
   } catch (err) {
     loadingInstance.close();
     ElMessage.error(err.response?.data?.msg || "导入失败");
+  }
+};
+
+const handlePrintCert = async (row) => {
+  const loading = ElMessage.success({
+    message: "正在生成学籍证明，请稍候...",
+    duration: 0,
+  });
+
+  try {
+    const res = await getStudentCertificate(row.id);
+
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${row.name}_学籍证明.docx`);
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    loading.close();
+  } catch (err) {
+    loading.close();
+    ElMessage.error("生成失败，请检查是否缺少学籍号或模板文件");
   }
 };
 </script>

@@ -80,3 +80,9 @@ export const exportTeachers = () =>
   api.get("/teachers/export", {
     responseType: "blob", // 必须声明接收二进制流
   });
+
+// --- 获取学生学籍证明 ---
+export const getStudentCertificate = (studentId) =>
+  api.get(`/students/${studentId}/certificate`, {
+    responseType: "blob", // 必须加这个
+  });
