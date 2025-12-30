@@ -219,6 +219,7 @@ import {
   getComprehensiveReport,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
+import { InfoFilled } from "@element-plus/icons-vue";
 
 // --- State ---
 const loading = ref(false);

@@ -278,9 +278,9 @@ const activeTab = ref("basic");
 // 计算最近几年的“年级”选项，例如 初一(2023级)
 const currentYear = new Date().getFullYear();
 const gradeYearOptions = [
-  { year: currentYear, label: "初一 (2025级)" }, // 示例逻辑，需根据实际调整
-  { year: currentYear - 1, label: "初二 (2024级)" },
-  { year: currentYear - 2, label: "初三 (2023级)" },
+  { year: currentYear, label: `初一 (${currentYear}级)` },
+  { year: currentYear - 1, label: `初二 (${currentYear - 1}级)` },
+  { year: currentYear - 2, label: `初三 (${currentYear - 2}级)` },
 ];
 
 const form = reactive({
