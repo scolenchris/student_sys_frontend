@@ -86,3 +86,7 @@ export const getStudentCertificate = (studentId) =>
   api.get(`/students/${studentId}/certificate`, {
     responseType: "blob", // 必须加这个
   });
+
+// --- 获取班级成绩统计 ---
+export const getClassScoreStats = (data) =>
+  api.post("/stats/class_score_stats", data);

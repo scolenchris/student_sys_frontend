@@ -47,6 +47,10 @@ const routes = [
         path: "exams",
         component: () => import("../views/admin/ExamPublish.vue"),
       },
+      {
+        path: "class-stats", // 访问路径: /admin/class-stats
+        component: () => import("../views/admin/ClassScoreStats.vue"),
+      },
     ],
   },
   {
