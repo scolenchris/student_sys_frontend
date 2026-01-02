@@ -1,14 +1,42 @@
 <template>
   <el-card>
     <template #header>
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        "
-      >
+      <div class="header-row">
         <h3>教师详细信息管理</h3>
+
+        <div class="filter-group">
+          <div class="filter-item">
+            <span class="label">管理学年：</span>
+            <el-select
+              v-model="currentAcademicYear"
+              placeholder="选择学年"
+              style="width: 140px"
+              @change="handleFilterChange"
+            >
+              <el-option
+                v-for="year in academicYearOptions"
+                :key="year"
+                :label="`${year}-${year + 1}学年`"
+                :value="year"
+              />
+            </el-select>
+          </div>
+
+          <div class="filter-item">
+            <span class="label">状态筛选：</span>
+            <el-select
+              v-model="filterStatus"
+              placeholder="状态"
+              style="width: 100px"
+              @change="handleFilterChange"
+            >
+              <el-option label="在职" value="在职" />
+              <el-option label="离职" value="离职" />
+              <el-option label="退休" value="退休" />
+              <el-option label="全部" value="全部" />
+            </el-select>
+          </div>
+        </div>
 
         <div style="display: flex; gap: 10px">
           <el-button type="warning" @click="handleExport">
@@ -22,29 +50,46 @@
             :http-request="handleUpload"
             accept=".xlsx, .xls"
           >
-            <el-button type="success"
-              ><el-icon style="margin-right: 5px"><Upload /></el-icon>
-              Excel批量导入教师</el-button
-            >
+            <el-button type="success">
+              <el-icon style="margin-right: 5px"><Upload /></el-icon>
+              Excel批量导入职务
+            </el-button>
           </el-upload>
         </div>
       </div>
     </template>
 
     <el-table :data="teachers" border stripe size="small">
-      <el-table-column prop="name" label="姓名" width="70" fixed />
+      <el-table-column prop="name" label="姓名" width="80" fixed />
       <el-table-column prop="gender" label="性别" width="50" />
+
+      <el-table-column prop="status" label="状态" width="70">
+        <template #default="scope">
+          <el-tag
+            :type="scope.row.status === '在职' ? 'success' : 'info'"
+            size="small"
+          >
+            {{ scope.row.status }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
       <el-table-column
         prop="job_duty_display"
-        label="职务"
-        width="100"
+        label="职务概要"
+        width="120"
         show-overflow-tooltip
       />
-      <el-table-column prop="job_title" label="职称" width="90" />
+      <el-table-column prop="job_title" label="职称" width="100" />
 
       <el-table-column label="班主任" min-width="90">
         <template #default="scope">
-          <span v-if="scope.row.head_teacher_desc === '否'" style="color: #ccc"
+          <span
+            v-if="
+              !scope.row.head_teacher_desc ||
+              scope.row.head_teacher_desc === '否'
+            "
+            style="color: #ccc"
             >否</span
           >
           <span v-else>{{ scope.row.head_teacher_desc }}</span>
@@ -52,7 +97,12 @@
       </el-table-column>
       <el-table-column label="级长" min-width="80">
         <template #default="scope">
-          <span v-if="scope.row.grade_leader_desc === '否'" style="color: #ccc"
+          <span
+            v-if="
+              !scope.row.grade_leader_desc ||
+              scope.row.grade_leader_desc === '否'
+            "
+            style="color: #ccc"
             >否</span
           >
           <span v-else>{{ scope.row.grade_leader_desc }}</span>
@@ -60,7 +110,12 @@
       </el-table-column>
       <el-table-column label="科组长" min-width="80">
         <template #default="scope">
-          <span v-if="scope.row.subject_group_desc === '否'" style="color: #ccc"
+          <span
+            v-if="
+              !scope.row.subject_group_desc ||
+              scope.row.subject_group_desc === '否'
+            "
+            style="color: #ccc"
             >否</span
           >
           <span v-else>{{ scope.row.subject_group_desc }}</span>
@@ -68,7 +123,11 @@
       </el-table-column>
       <el-table-column label="备课组长" min-width="100" show-overflow-tooltip>
         <template #default="scope">
-          <span v-if="scope.row.prep_group_desc === '否'" style="color: #ccc"
+          <span
+            v-if="
+              !scope.row.prep_group_desc || scope.row.prep_group_desc === '否'
+            "
+            style="color: #ccc"
             >否</span
           >
           <span v-else>{{ scope.row.prep_group_desc }}</span>
@@ -118,23 +177,25 @@
       <el-tabs v-model="activeTab">
         <el-tab-pane label="基础信息" name="basic">
           <el-form :model="form" label-width="80px" :inline="true">
-            <el-form-item label="姓名"
-              ><el-input v-model="form.name" style="width: 150px"
-            /></el-form-item>
-            <el-form-item label="电话"
-              ><el-input v-model="form.phone" style="width: 150px"
-            /></el-form-item>
+            <el-form-item label="姓名">
+              <el-input v-model="form.name" style="width: 150px" />
+            </el-form-item>
+            <el-form-item label="电话">
+              <el-input v-model="form.phone" style="width: 150px" />
+            </el-form-item>
             <el-form-item label="性别">
               <el-select v-model="form.gender" style="width: 150px">
-                <el-option label="男" value="男" /><el-option
-                  label="女"
-                  value="女"
-                />
+                <el-option label="男" value="男" />
+                <el-option label="女" value="女" />
               </el-select>
             </el-form-item>
-            <el-form-item label="民族"
-              ><el-input v-model="form.ethnicity" style="width: 150px"
-            /></el-form-item>
+            <el-form-item label="状态">
+              <el-select v-model="form.status" style="width: 150px">
+                <el-option label="在职" value="在职" />
+                <el-option label="离职" value="离职" />
+                <el-option label="退休" value="退休" />
+              </el-select>
+            </el-form-item>
             <el-form-item label="职称">
               <el-select v-model="form.job_title" style="width: 150px">
                 <el-option label="中学一级教师" value="中学一级教师" />
@@ -142,16 +203,22 @@
                 <el-option label="中学二级教师" value="中学二级教师" />
               </el-select>
             </el-form-item>
-            <el-form-item label="学历"
-              ><el-input v-model="form.education" style="width: 150px"
-            /></el-form-item>
-            <el-form-item label="备注"
-              ><el-input v-model="form.remarks" style="width: 400px"
-            /></el-form-item>
+            <el-form-item label="学历">
+              <el-input v-model="form.education" style="width: 150px" />
+            </el-form-item>
+            <el-form-item label="备注">
+              <el-input v-model="form.remarks" style="width: 400px" />
+            </el-form-item>
           </el-form>
         </el-tab-pane>
 
         <el-tab-pane label="职务管理" name="duty">
+          <el-alert
+            :title="`注意：您正在编辑【${currentAcademicYear}学年】的职务信息`"
+            type="warning"
+            :closable="false"
+            style="margin-bottom: 10px"
+          />
           <el-form :model="form" label-width="100px">
             <el-form-item label="班主任分配">
               <el-select
@@ -256,7 +323,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, computed } from "vue";
 import {
   getTeachers,
   updateTeacher,
@@ -269,13 +336,29 @@ import {
 import { ElMessage } from "element-plus";
 import { Delete, Download, Upload } from "@element-plus/icons-vue";
 
+// --- 1. 学年与状态逻辑 ---
+const now = new Date();
+const currentRealYear = now.getFullYear();
+const defaultAcademicYear =
+  now.getMonth() >= 8 ? currentRealYear : currentRealYear - 1;
+
+const currentAcademicYear = ref(defaultAcademicYear);
+const filterStatus = ref("在职"); // 默认只看在职
+
+const academicYearOptions = computed(() => {
+  const years = [];
+  for (let i = -2; i < 3; i++) {
+    years.push(defaultAcademicYear + i);
+  }
+  return years.sort((a, b) => b - a); // 降序
+});
+
 const teachers = ref([]);
 const classOptions = ref([]);
 const subjectOptions = ref([]);
 const editVisible = ref(false);
 const activeTab = ref("basic");
 
-// 计算最近几年的“年级”选项，例如 初一(2023级)
 const currentYear = new Date().getFullYear();
 const gradeYearOptions = [
   { year: currentYear, label: `初一 (${currentYear}级)` },
@@ -287,6 +370,7 @@ const form = reactive({
   id: null,
   name: "",
   gender: "",
+  status: "在职",
   ethnicity: "",
   phone: "",
   job_title: "",
@@ -299,8 +383,17 @@ const form = reactive({
 });
 
 const fetchData = async () => {
-  const res = await getTeachers();
+  // 传入学年和状态参数
+  const res = await getTeachers({
+    academic_year: currentAcademicYear.value,
+    status: filterStatus.value,
+  });
   teachers.value = res.data;
+};
+
+// 筛选变化时刷新
+const handleFilterChange = () => {
+  fetchData();
 };
 
 const fetchOptions = async () => {
@@ -311,15 +404,23 @@ const fetchOptions = async () => {
 };
 
 const editTeacher = (row) => {
-  Object.assign(form, row);
-  // 确保深拷贝数组，防止编辑时直接影响表格显示
-  form.head_teacher_ids = [...row.head_teacher_ids];
-  form.grade_leader_years = [...row.grade_leader_years];
-  form.subject_group_ids = [...row.subject_group_ids];
-  form.prep_group_data = row.prep_group_data.map((i) => ({ ...i }));
+  try {
+    Object.assign(form, row);
+    // [修复] 加了默认值 []，防止 undefined 导致 JS 报错，从而让按钮“没反应”
+    form.head_teacher_ids = [...(row.head_teacher_ids || [])];
+    form.grade_leader_years = [...(row.grade_leader_years || [])];
+    form.subject_group_ids = [...(row.subject_group_ids || [])];
 
-  activeTab.value = "basic";
-  editVisible.value = true;
+    // 同样处理备课组数据
+    const rawPrep = row.prep_group_data || [];
+    form.prep_group_data = rawPrep.map((i) => ({ ...i }));
+
+    activeTab.value = "basic";
+    editVisible.value = true;
+  } catch (e) {
+    console.error("打开编辑框失败:", e);
+    ElMessage.error("数据加载异常，请刷新重试");
+  }
 };
 
 const addPrep = () => {
@@ -331,7 +432,13 @@ const removePrep = (index) => {
 
 const saveTeacher = async () => {
   try {
-    await updateTeacher(form.id, form);
+    // 提交数据带上当前选中的学年
+    const submitData = {
+      ...form,
+      academic_year: currentAcademicYear.value,
+    };
+
+    await updateTeacher(form.id, submitData);
     ElMessage.success("更新成功");
     editVisible.value = false;
     fetchData();
@@ -340,13 +447,13 @@ const saveTeacher = async () => {
   }
 };
 
-// 导入老师信息
 const handleUpload = async (param) => {
   const formData = new FormData();
   formData.append("file", param.file);
+  formData.append("academic_year", currentAcademicYear.value);
 
   const loadingInstance = ElMessage.success({
-    message: "正在导入教师信息，请稍候...",
+    message: `正在导入 ${currentAcademicYear.value} 学年教师职务...`,
     duration: 0,
   });
 
@@ -354,7 +461,6 @@ const handleUpload = async (param) => {
     const res = await importTeachersExcel(formData);
     loadingInstance.close();
     ElMessage.success(res.data.msg);
-    // 导入完成后刷新列表
     fetchData();
   } catch (err) {
     loadingInstance.close();
@@ -362,7 +468,6 @@ const handleUpload = async (param) => {
   }
 };
 
-// 重置教师密码
 const handleResetPwd = async (id) => {
   try {
     const res = await resetTeacherPassword(id);
@@ -375,19 +480,16 @@ const handleResetPwd = async (id) => {
 const handleExport = async () => {
   try {
     const res = await exportTeachers();
-
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "教师信息表(含职务分配).xlsx");
-
+    link.setAttribute("download", "教师信息表.xlsx");
     document.body.appendChild(link);
     link.click();
-
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   } catch (err) {
-    ElMessage.error(err.response?.data?.msg || "导出失败");
+    ElMessage.error("导出失败");
   }
 };
 
@@ -396,3 +498,29 @@ onMounted(() => {
   fetchOptions();
 });
 </script>
+
+<style scoped>
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.filter-group {
+  display: flex;
+  gap: 20px;
+}
+.filter-item {
+  display: flex;
+  align-items: center;
+  background-color: #f0f9eb;
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #e1f3d8;
+}
+.label {
+  font-size: 14px;
+  color: #606266;
+  margin-right: 8px;
+  font-weight: bold;
+}
+</style>

@@ -9,7 +9,7 @@ const api = axios.create({
 export const getPendingUsers = () => api.get("/pending_users");
 export const approveUser = (id) => api.post(`/approve_user/${id}`);
 export const rejectUser = (id) => api.delete(`/reject_user/${id}`);
-export const getTeachers = () => api.get("/teachers");
+export const getTeachers = (params) => api.get("/teachers", { params });
 export const updateTeacher = (id, data) => api.put(`/teachers/${id}`, data);
 
 // --- 班级管理 ---
@@ -30,7 +30,7 @@ export const getComprehensiveReport = (data) =>
   api.post("/stats/comprehensive_report", data);
 
 // --- 科目登记 ---
-export const getAssignments = () => api.get("/assignments");
+export const getAssignments = (params) => api.get("/assignments", { params });
 export const addAssignment = (data) => api.post("/assignments", data);
 export const deleteAssignment = (id) => api.delete(`/assignments/${id}`);
 export const getSubjects = () => api.get("/subjects"); //科目下拉框选择

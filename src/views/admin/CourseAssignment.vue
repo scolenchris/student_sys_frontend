@@ -2,7 +2,25 @@
   <el-card>
     <template #header>
       <div class="header">
-        <span>任课分配管理</span>
+        <div style="display: flex; align-items: center; gap: 15px">
+          <span style="font-weight: bold; font-size: 16px">任课分配管理</span>
+
+          <el-select
+            v-model="currentAcademicYear"
+            placeholder="学年"
+            style="width: 140px"
+            size="small"
+            @change="fetchData"
+          >
+            <el-option
+              v-for="year in academicYearOptions"
+              :key="year"
+              :label="`${year}-${year + 1}学年`"
+              :value="year"
+            />
+          </el-select>
+        </div>
+
         <div style="display: flex; gap: 10px">
           <el-upload
             class="upload-demo"
@@ -47,7 +65,11 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="visible" title="为教师分配班级和科目" width="400px">
+    <el-dialog
+      v-model="visible"
+      :title="`新增任课 (${currentAcademicYear}学年)`"
+      width="400px"
+    >
       <el-form :model="form" label-width="80px">
         <el-form-item label="选择教师">
           <el-select
@@ -135,10 +157,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, computed } from "vue";
 import * as adminApi from "../../api/admin";
 import { ElMessage } from "element-plus";
 import { Upload, Plus, Download } from "@element-plus/icons-vue";
+
+// --- 1. 学年逻辑 ---
+const now = new Date();
+const defaultYear =
+  now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+const currentAcademicYear = ref(defaultYear);
+
+const academicYearOptions = computed(() => {
+  const years = [];
+  for (let i = -2; i < 3; i++) years.push(defaultYear + i);
+  return years.sort((a, b) => b - a);
+});
 
 const assignments = ref([]);
 const teachers = ref([]);
@@ -157,7 +191,10 @@ const form = reactive({ teacher_id: "", class_id: "", subject_id: "" });
 const fetchData = async () => {
   loading.value = true;
   try {
-    const res = await adminApi.getAssignments();
+    // 传入 academic_year 参数进行筛选
+    const res = await adminApi.getAssignments({
+      academic_year: currentAcademicYear.value,
+    });
     assignments.value = res.data;
   } finally {
     loading.value = false;
@@ -179,7 +216,13 @@ const openDialog = async () => {
 
 const submit = async () => {
   try {
-    await adminApi.addAssignment(form);
+    // 提交时带上当前选中的学年
+    const postData = {
+      ...form,
+      academic_year: currentAcademicYear.value,
+    };
+
+    await adminApi.addAssignment(postData);
     ElMessage.success("分配成功");
     visible.value = false;
     fetchData();
@@ -202,9 +245,11 @@ const handleDelete = async (id) => {
 const handleImport = async (param) => {
   const formData = new FormData();
   formData.append("file", param.file);
+  // [关键] 附加学年
+  formData.append("academic_year", currentAcademicYear.value);
 
   const loadingInstance = ElMessage.success({
-    message: "正在校验并导入数据，请稍候...",
+    message: `正在校验并导入 ${currentAcademicYear.value} 学年任课表...`,
     duration: 0,
   });
 
