@@ -360,10 +360,11 @@ const editVisible = ref(false);
 const activeTab = ref("basic");
 
 const currentYear = new Date().getFullYear();
+// 修改：统一显示 xx级，去掉初x表述
 const gradeYearOptions = [
-  { year: currentYear, label: `初一 (${currentYear}级)` },
-  { year: currentYear - 1, label: `初二 (${currentYear - 1}级)` },
-  { year: currentYear - 2, label: `初三 (${currentYear - 2}级)` },
+  { year: currentYear, label: `${currentYear}级` },
+  { year: currentYear - 1, label: `${currentYear - 1}级` },
+  { year: currentYear - 2, label: `${currentYear - 2}级` },
 ];
 
 const form = reactive({

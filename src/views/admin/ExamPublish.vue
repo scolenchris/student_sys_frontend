@@ -7,11 +7,26 @@
       </div>
     </template>
 
-    <div style="margin-bottom: 20px; display: flex; gap: 10px">
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap">
       <el-select
-        v-model="filterYear"
+        v-model="filterAcademicYear"
+        placeholder="筛选学年"
+        style="width: 140px"
+        @change="fetchTasks"
+      >
+        <el-option
+          v-for="y in academicYearOptions"
+          :key="y"
+          :label="`${y}学年`"
+          :value="y"
+        />
+      </el-select>
+
+      <el-select
+        v-model="filterEntryYear"
         placeholder="筛选年级"
         clearable
+        style="width: 140px"
         @change="fetchTasks"
       >
         <el-option
@@ -21,10 +36,12 @@
           :value="y.year"
         />
       </el-select>
+
       <el-select
         v-model="filterSubject"
         placeholder="筛选科目"
         clearable
+        style="width: 140px"
         @change="fetchTasks"
       >
         <el-option
@@ -37,8 +54,19 @@
     </div>
 
     <el-table :data="tasks" border stripe v-loading="loading">
+      <el-table-column
+        prop="academic_year"
+        label="所属学年"
+        width="100"
+        sortable
+      >
+        <template #default="scope">
+          {{ scope.row.academic_year }}学年
+        </template>
+      </el-table-column>
+
       <el-table-column prop="name" label="考试名称" min-width="150" />
-      <el-table-column prop="grade_name" label="年级" width="120" />
+      <el-table-column prop="grade_name" label="年级" width="100" />
       <el-table-column prop="subject_name" label="科目" width="100" />
       <el-table-column prop="full_score" label="满分" width="80" />
       <el-table-column label="录入状态" width="100">
@@ -52,7 +80,7 @@
           />
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="120">
+      <el-table-column label="操作" width="120" fixed="right">
         <template #default="scope">
           <el-button type="primary" link @click="editFullScore(scope.row)"
             >改满分</el-button
@@ -71,8 +99,23 @@
 
     <el-dialog v-model="dialogVisible" title="发布考试任务" width="500px">
       <el-form :model="form" label-width="100px">
+        <el-form-item label="所属学年">
+          <el-select v-model="form.academic_year" style="width: 100%">
+            <el-option
+              v-for="y in academicYearOptions"
+              :key="y"
+              :label="`${y}学年`"
+              :value="y"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="选择年级">
-          <el-select v-model="form.entry_year" style="width: 100%">
+          <el-select
+            v-model="form.entry_year"
+            style="width: 100%"
+            placeholder="例如 2023级"
+          >
             <el-option
               v-for="y in gradeOptions"
               :key="y.year"
@@ -150,19 +193,35 @@ const subjects = ref([]);
 const loading = ref(false);
 const dialogVisible = ref(false);
 
-const filterYear = ref(null);
+// --- 学年逻辑 ---
+const now = new Date();
+const currentRealYear = now.getFullYear();
+// 如果是8月前，当前学年是去年；8月后，当前学年是今年
+const defaultAcademicYear =
+  now.getMonth() >= 7 ? currentRealYear : currentRealYear - 1;
+
+// 筛选状态
+const filterAcademicYear = ref(defaultAcademicYear);
+const filterEntryYear = ref(null);
 const filterSubject = ref(null);
 
-const currentYear = new Date().getFullYear();
-// 生成最近3年的年级选项 (需要结合月份判断，这里简单处理)
+// 学年选项 (前后3年)
+const academicYearOptions = computed(() => {
+  const years = [];
+  for (let i = -2; i < 3; i++) {
+    years.push(defaultAcademicYear + i);
+  }
+  return years.sort((a, b) => b - a);
+});
+
+// 年级选项 (最近3届)
 const gradeOptions = computed(() => {
-  // 假设9月开学，如果现在是1-8月，初一是去年入学的；如果9-12月，初一是今年入学的
-  const isFall = new Date().getMonth() >= 8;
-  const base = isFall ? currentYear : currentYear - 1;
+  // 这里的 base 逻辑最好与 academicYear 挂钩，或者直接用当前时间
+  const base = now.getMonth() >= 7 ? currentRealYear : currentRealYear - 1;
   return [
-    { year: base, label: `初一 (${base}级)` },
-    { year: base - 1, label: `初二 (${base - 1}级)` },
-    { year: base - 2, label: `初三 (${base - 2}级)` },
+    { year: base, label: `${base}级` },
+    { year: base - 1, label: `${base - 1}级` },
+    { year: base - 2, label: `${base - 2}级` },
   ];
 });
 
@@ -186,6 +245,7 @@ const predefinedTypes = [
 ];
 
 const form = reactive({
+  academic_year: defaultAcademicYear, // 新增
   entry_year: null,
   name: "",
   subject_id: null,
@@ -197,7 +257,8 @@ const fetchTasks = async () => {
   loading.value = true;
   try {
     const res = await getExamTasks({
-      entry_year: filterYear.value,
+      academic_year: filterAcademicYear.value, // 传参
+      entry_year: filterEntryYear.value,
       subject_id: filterSubject.value,
     });
     tasks.value = res.data;
@@ -212,6 +273,8 @@ const fetchSubjects = async () => {
 };
 
 const openDialog = () => {
+  // 重置表单，默认选中当前筛选的学年，方便连续录入
+  form.academic_year = filterAcademicYear.value || defaultAcademicYear;
   form.entry_year = null;
   form.name = "";
   form.subject_id = null;
@@ -221,8 +284,13 @@ const openDialog = () => {
 };
 
 const submitForm = async () => {
-  if (!form.entry_year || !form.name || !form.subject_id) {
-    return ElMessage.warning("请填写完整信息");
+  if (
+    !form.academic_year ||
+    !form.entry_year ||
+    !form.name ||
+    !form.subject_id
+  ) {
+    return ElMessage.warning("请填写完整信息（含学年）");
   }
   try {
     await addExamTask(form);
@@ -239,7 +307,7 @@ const handleStatusChange = async (row) => {
     await updateExamTask(row.id, { is_active: row.is_active });
     ElMessage.success("状态已更新");
   } catch (err) {
-    row.is_active = !row.is_active; // 失败回滚
+    row.is_active = !row.is_active;
     ElMessage.error("更新失败");
   }
 };
