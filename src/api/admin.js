@@ -90,3 +90,7 @@ export const getStudentCertificate = (studentId) =>
 // --- 获取班级成绩统计 ---
 export const getClassScoreStats = (data) =>
   api.post("/stats/class_score_stats", data);
+
+// --- 教师教学成绩统计 ---
+export const getTeacherScoreStats = (data) =>
+  api.post("/stats/teacher_score_stats", data);
