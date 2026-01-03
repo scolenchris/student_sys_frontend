@@ -2,7 +2,8 @@ import axios from "axios";
 
 // 指向你的 Flask 后端地址
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  // baseURL: "http://localhost:5000/api",
+  baseURL: "http://192.168.1.205:5000/api",
   timeout: 5000,
 });
 
