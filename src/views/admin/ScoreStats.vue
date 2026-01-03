@@ -3,13 +3,48 @@
     <template #header>
       <div class="header-row">
         <h3>综合成绩统计与排名</h3>
-        <el-button
-          type="success"
-          @click="exportCSV"
-          :disabled="tableData.length === 0"
-        >
-          导出报表
-        </el-button>
+        <div class="action-group">
+          <el-button-group>
+            <el-button
+              type="warning"
+              plain
+              @click="handleTemplateDownload('template')"
+              :disabled="!query.entry_year || query.subject_ids.length === 0"
+            >
+              <el-icon><Document /></el-icon> 下载录入模版
+            </el-button>
+            <el-button
+              type="success"
+              plain
+              @click="handleTemplateDownload('backup')"
+              :disabled="!query.entry_year || !query.exam_name"
+            >
+              <el-icon><Download /></el-icon> 导出备份
+            </el-button>
+          </el-button-group>
+
+          <el-upload
+            class="upload-inline"
+            action=""
+            :show-file-list="false"
+            :http-request="handleStrictImport"
+            accept=".xlsx, .xls"
+            style="display: inline-block; margin-left: 10px"
+          >
+            <el-button type="primary">
+              <el-icon><Upload /></el-icon> 严谨导入成绩
+            </el-button>
+          </el-upload>
+
+          <el-button
+            type="info"
+            @click="exportCSV"
+            :disabled="tableData.length === 0"
+            style="margin-left: 10px"
+          >
+            导出统计报表
+          </el-button>
+        </div>
       </div>
     </template>
 
@@ -207,6 +242,88 @@
         fixed="right"
       />
     </el-table>
+    <el-dialog
+      v-model="importResult.visible"
+      title="导入结果报告"
+      width="700px"
+    >
+      <div v-if="importResult.status === 'error'">
+        <el-alert
+          title="导入失败：数据未写入"
+          type="error"
+          show-icon
+          :closable="false"
+        >
+          <template #default>
+            <div>
+              检测到致命错误，为保证数据一致性，所有操作已回滚。请修正Excel后重试。
+            </div>
+          </template>
+        </el-alert>
+        <div class="error-list">
+          <h4>致命错误详情：</h4>
+          <el-scrollbar max-height="300px">
+            <ul>
+              <li
+                v-for="(err, idx) in importResult.logs.fatal_errors"
+                :key="idx"
+                style="color: #f56c6c"
+              >
+                {{ err }}
+              </li>
+            </ul>
+          </el-scrollbar>
+        </div>
+      </div>
+
+      <div v-else>
+        <el-alert
+          :title="importResult.msg"
+          type="success"
+          show-icon
+          :closable="false"
+        />
+
+        <div v-if="importResult.logs.warnings?.length" style="margin-top: 15px">
+          <el-alert
+            title="冗余数据警告 (已自动忽略，不影响导入)"
+            type="warning"
+            :closable="false"
+          />
+          <el-scrollbar max-height="150px">
+            <ul>
+              <li
+                v-for="(w, idx) in importResult.logs.warnings"
+                :key="idx"
+                style="color: #e6a23c"
+              >
+                {{ w }}
+              </li>
+            </ul>
+          </el-scrollbar>
+        </div>
+
+        <div
+          v-if="importResult.logs.missing_students?.length"
+          style="margin-top: 15px"
+        >
+          <el-alert title="缺失名单提示" type="info" :closable="false" />
+          <ul>
+            <li
+              v-for="(m, idx) in importResult.logs.missing_students"
+              :key="idx"
+              style="color: #909399"
+            >
+              {{ m }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="importResult.visible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
@@ -217,9 +334,16 @@ import {
   getClasses,
   getExamNames,
   getComprehensiveReport,
+  getScoreTemplate,
+  importAdminScores,
 } from "../../api/admin";
-import { ElMessage } from "element-plus";
-import { InfoFilled } from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import {
+  InfoFilled,
+  Document,
+  Upload,
+  Download,
+} from "@element-plus/icons-vue";
 
 // --- State ---
 const loading = ref(false);
@@ -235,6 +359,13 @@ const query = reactive({
   exam_name: "",
   subject_ids: [],
   class_ids: [],
+});
+
+const importResult = reactive({
+  visible: false,
+  status: "success",
+  msg: "",
+  logs: {},
 });
 
 // --- Computed ---
@@ -382,10 +513,117 @@ const exportCSV = () => {
   document.body.removeChild(link);
 };
 
+const handleTemplateDownload = async (type) => {
+  // 校验
+  if (!query.entry_year) return ElMessage.warning("请选择年级");
+  if (query.subject_ids.length === 0)
+    return ElMessage.warning("请至少选择一个科目");
+
+  if (type === "backup" && !query.exam_name) {
+    return ElMessage.warning("导出备份必须选择考试名称");
+  }
+
+  try {
+    const res = await getScoreTemplate({
+      entry_year: query.entry_year,
+      class_ids: query.class_ids, // 支持按班级筛选导出
+      subject_ids: query.subject_ids,
+      exam_name: type === "backup" ? query.exam_name : null,
+    });
+
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    const prefix = type === "backup" ? "成绩备份" : "录入模版";
+    link.setAttribute("download", `${query.entry_year}级_${prefix}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    ElMessage.error("下载失败");
+  }
+};
+
+// 2. 严谨导入
+const handleStrictImport = async (param) => {
+  // 前置校验
+  if (!query.entry_year || !query.exam_name || query.subject_ids.length === 0) {
+    return ElMessage.warning(
+      "请务必先在上方筛选栏选择：年级、考试名称、以及本次要导入的科目！"
+    );
+  }
+
+  // 二次确认
+  try {
+    await ElMessageBox.confirm(
+      `即将向【${query.entry_year}级 - ${query.exam_name}】导入 ${query.subject_ids.length} 个科目的成绩。\n请确保Excel表头与系统科目名称严格一致。`,
+      "导入确认",
+      {
+        confirmButtonText: "确定导入",
+        cancelButtonText: "取消",
+        type: "warning",
+      }
+    );
+  } catch {
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", param.file);
+  formData.append("entry_year", query.entry_year);
+  formData.append("exam_name", query.exam_name);
+  formData.append("subject_ids", JSON.stringify(query.subject_ids)); // 传数组
+  formData.append("class_ids", JSON.stringify(query.class_ids)); // 传数组
+
+  const loadingInst = ElMessage.success({
+    message: "正在进行原子性校验与导入...",
+    duration: 0,
+  });
+
+  try {
+    const res = await importAdminScores(formData);
+    loadingInst.close();
+
+    // 无论是 success 还是 error (如果是后端处理过的业务error)，都弹窗显示详情
+    // 注意：axios 拦截器可能会拦截非 200 响应。
+    // 如果后端返回 200 但 status='error' (业务逻辑拒绝)，走这里：
+    if (res.data.status === "error") {
+      importResult.status = "error";
+      importResult.msg = res.data.msg;
+    } else {
+      importResult.status = "success";
+      importResult.msg = res.data.msg;
+      // 导入成功后刷新列表
+      handleSearch();
+    }
+    importResult.logs = res.data.logs;
+    importResult.visible = true;
+  } catch (err) {
+    loadingInst.close();
+    // 如果是 400 等 HTTP 错误，通常在这里捕获
+    if (err.response && err.response.data && err.response.data.logs) {
+      // 这是我们在后端返回的带 logs 的 400/200 响应
+      importResult.status = "error";
+      importResult.msg = err.response.data.msg;
+      importResult.logs = err.response.data.logs;
+      importResult.visible = true;
+    } else {
+      ElMessage.error(err.response?.data?.msg || "导入请求失败");
+    }
+  }
+};
+
 onMounted(initData);
 </script>
 
 <style scoped>
+.error-list ul {
+  padding-left: 20px;
+  margin: 5px 0;
+}
+.upload-inline {
+  display: inline-block;
+}
 .stats-card {
   min-height: 80vh;
 }

@@ -94,3 +94,15 @@ export const getClassScoreStats = (data) =>
 // --- 教师教学成绩统计 ---
 export const getTeacherScoreStats = (data) =>
   api.post("/stats/teacher_score_stats", data);
+
+// 获取成绩录入模版 (或备份)
+export const getScoreTemplate = (data) =>
+  api.post("/stats/score_template", data, {
+    responseType: "blob",
+  });
+
+// 严谨导入成绩
+export const importAdminScores = (formData) =>
+  api.post("/stats/import_scores", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
