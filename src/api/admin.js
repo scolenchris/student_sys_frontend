@@ -107,3 +107,8 @@ export const importAdminScores = (formData) =>
   api.post("/stats/import_scores", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+
+// --- 注册系统设置 ---
+export const getSystemSettings = () => api.get("/system/settings");
+export const updateSystemSettings = (data) =>
+  api.post("/system/settings", data);

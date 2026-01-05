@@ -8,6 +8,7 @@
       >
         <div class="logo">管理后台</div>
         <el-menu-item index="/admin/approval">用户审核</el-menu-item>
+        <el-menu-item index="/admin/settings">系统设置</el-menu-item>
         <el-menu-item index="/admin/teachers">教师管理</el-menu-item>
         <el-menu-item index="/admin/classes">班级管理</el-menu-item>
         <el-menu-item index="/admin/students">学籍管理</el-menu-item>

@@ -55,6 +55,10 @@ const routes = [
         path: "teacher-stats",
         component: () => import("../views/admin/TeacherStats.vue"),
       },
+      {
+        path: "settings",
+        component: () => import("../views/admin/SystemSettings.vue"),
+      },
     ],
   },
   {
