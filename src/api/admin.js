@@ -2,7 +2,8 @@ import axios from "axios";
 
 const api = axios.create({
   // baseURL: "http://localhost:5000/api/admin", // 确保指向 Flask 后端
-  baseURL: "http://192.168.1.205:5000/api/admin", // 确保指向 Flask 后端
+  // baseURL: "http://192.168.149.177:5000/api/admin", // 确保指向 Flask 后端
+  baseURL: "/api/admin",
   timeout: 5000,
 });
 

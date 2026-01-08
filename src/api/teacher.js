@@ -3,7 +3,8 @@ import axios from "axios";
 // 配置指向后端 teacher 蓝图的地址
 const api = axios.create({
   // baseURL: "http://localhost:5000/api/teacher",
-  baseURL: "http://192.168.1.205:5000/api/teacher",
+  // baseURL: "http://192.168.149.177:5000/api/teacher",
+  baseURL: "/api/teacher",
   timeout: 5000,
 });
 

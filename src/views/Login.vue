@@ -102,22 +102,37 @@ const handleSubmit = async () => {
     if (isRegister.value) {
       const res = await registerApi(form);
       ElMessage.success(res.data.msg);
-      // 注册成功后返回登录页
       isRegister.value = false;
     } else {
       const res = await loginApi({
         username: form.username,
         password: form.password,
       });
-      // ... 登录逻辑保持不变 ...
+
+      // 1. 存储用户信息
       localStorage.setItem("user_id", res.data.user_id);
       localStorage.setItem("user_role", res.data.role);
       localStorage.setItem("username", res.data.username);
 
+      // [修改点 1]：存储强制修改密码标记
+      if (res.data.must_change_password) {
+        localStorage.setItem("must_change_password", "true");
+      } else {
+        localStorage.removeItem("must_change_password");
+      }
+
       ElMessage.success("登录成功");
+
+      // [修改点 2]：根据标记决定跳转方向
       setTimeout(() => {
-        if (res.data.role === "admin") router.push("/admin/approval");
-        else router.push("/teacher/scores");
+        if (res.data.must_change_password) {
+          // 强制跳转修改密码
+          router.push("/change-password");
+        } else {
+          // 正常跳转
+          if (res.data.role === "admin") router.push("/admin/approval");
+          else router.push("/teacher/scores");
+        }
       }, 100);
     }
   } catch (error) {
