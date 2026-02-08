@@ -113,3 +113,15 @@ export const importAdminScores = (formData) =>
 export const getSystemSettings = () => api.get("/system/settings");
 export const updateSystemSettings = (data) =>
   api.post("/system/settings", data);
+
+// --- 管理员成绩录入专用接口 ---
+// 1. 根据班级ID获取该班级能参加的所有考试 (带科目名)
+export const getAdminClassExams = (params) =>
+  api.get("/score_entry/exams", { params });
+
+// 2. 获取打分名单
+export const getAdminScoreList = (params) =>
+  api.get("/score_entry/student_list", { params });
+
+// 3. 保存成绩
+export const saveAdminScores = (data) => api.post("/score_entry/save", data);

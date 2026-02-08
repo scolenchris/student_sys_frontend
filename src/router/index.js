@@ -59,6 +59,10 @@ const routes = [
         path: "settings",
         component: () => import("../views/admin/SystemSettings.vue"),
       },
+      {
+        path: "score-entry",
+        component: () => import("../views/admin/AdminScoreEntry.vue"),
+      },
     ],
   },
   {

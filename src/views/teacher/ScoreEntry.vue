@@ -216,7 +216,7 @@ const handleCourseChange = async (assignmentId) => {
   selectedExamId.value = null;
   students.value = [];
   const info = myCourses.value.find(
-    (item) => item.assignment_id === assignmentId
+    (item) => item.assignment_id === assignmentId,
   );
   selectedCourseInfo.value = info;
 
@@ -329,46 +329,57 @@ const handleImport = async (param) => {
 };
 
 const validateInput = (row, index) => {
-  // 1. 空值处理（允许暂时留空）
-  if (
-    row.score === null ||
-    row.score === undefined ||
-    String(row.score).trim() === ""
-  ) {
-    return;
-  }
+  // 1. 空值预处理
+  if (row.score === null || row.score === undefined) return;
 
+  // 转为字符串并去除首尾空格
   const strVal = String(row.score).trim();
 
-  // 2. 检查是否为“缺考”
-  if (strVal === "缺考") {
-    // 格式化一下，去除可能的空格
-    row.score = "缺考";
+  // 如果是空字符串，重置为 null（视为未录入）并不报错
+  if (strVal === "") {
+    row.score = null;
     return;
   }
 
-  // 3. 检查是否为数字
-  const numVal = parseFloat(strVal);
+  // 2. 检查特殊标识 "缺考"
+  if (strVal === "缺考") {
+    return;
+  }
+
+  // 3. 严格数字校验
+  // 【关键修改】：使用 Number() 替代 parseFloat()
+  // parseFloat("40a12") -> 40 (宽松，不符合要求)
+  // Number("40a12") -> NaN (严格，符合要求)
+  const numVal = Number(strVal);
+
+  // 额外正则校验：防止科学计数法 (如 1e2) 或其他边缘情况，只允许标准数字格式
+  // 允许：40, 40.5, .5, 40.
+  // 不允许：40a12, 12-3, 1e5
+  const isStandardNumber = /^-?(\d+\.?\d*|\.\d+)$/.test(strVal);
+
   const maxScore = currentExamInfo.value?.full_score || 100;
 
-  if (isNaN(numVal)) {
+  // 综合校验：必须是有效数字 且 符合正则格式
+  if (isNaN(numVal) || !isStandardNumber) {
     ElMessage.warning(
-      `第 ${index + 1} 行：输入格式错误，请输入有效数字或“缺考”`
+      `第 ${index + 1} 行：输入内容 "${strVal}" 不合法，请输入纯数字或"缺考"`,
     );
-    // 错误时清空或保留原值，这里选择清空以提示用户
-    row.score = null;
-  } else {
-    // 4. 检查分数范围
-    if (numVal < 0 || numVal > maxScore) {
-      ElMessage.warning(
-        `第 ${index + 1} 行：分数 ${numVal} 超出范围 (0-${maxScore})`
-      );
-      row.score = null;
-    } else {
-      // 可选：格式化数字（例如去掉多余的0，保留1位小数等），视需求而定
-      // row.score = parseFloat(numVal.toFixed(1));
-    }
+    row.score = null; // 清空非法输入
+    return;
   }
+
+  // 4. 数值范围校验
+  if (numVal < 0 || numVal > maxScore) {
+    ElMessage.warning(
+      `第 ${index + 1} 行：分数 ${numVal} 超出范围 (0-${maxScore})`,
+    );
+    row.score = null;
+    return;
+  }
+
+  // 5. (可选) 自动格式化
+  // 将 "090" 修正为 90，将 "40." 修正为 40
+  row.score = numVal;
 };
 
 onMounted(fetchMyCourses);
