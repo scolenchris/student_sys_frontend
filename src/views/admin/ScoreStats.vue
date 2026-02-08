@@ -71,7 +71,6 @@
           placeholder="先选年级"
           :disabled="!query.entry_year"
           style="width: 180px"
-          @change="handleSearch"
         >
           <el-option
             v-for="name in examNameOptions"
@@ -89,7 +88,6 @@
           collapse-tags
           placeholder="选择科目"
           style="width: 220px"
-          @change="handleSearch"
         >
           <el-option
             v-for="s in subjectOptions"
@@ -108,7 +106,6 @@
           placeholder="默认全级 (可多选)"
           style="width: 220px"
           :disabled="!query.entry_year"
-          @change="handleSearch"
         >
           <el-option
             v-for="c in filteredClassOptions"
@@ -484,7 +481,7 @@ const exportCSV = () => {
 
   tableData.value.forEach((row) => {
     const subScores = dynamicColumns.value.map((sub) =>
-      row.scores[sub] !== undefined ? row.scores[sub] : "-"
+      row.scores[sub] !== undefined ? row.scores[sub] : "-",
     );
 
     const rowData = [
@@ -549,7 +546,7 @@ const handleStrictImport = async (param) => {
   // 前置校验
   if (!query.entry_year || !query.exam_name || query.subject_ids.length === 0) {
     return ElMessage.warning(
-      "请务必先在上方筛选栏选择：年级、考试名称、以及本次要导入的科目！"
+      "请务必先在上方筛选栏选择：年级、考试名称、以及本次要导入的科目！",
     );
   }
 
@@ -562,7 +559,7 @@ const handleStrictImport = async (param) => {
         confirmButtonText: "确定导入",
         cancelButtonText: "取消",
         type: "warning",
-      }
+      },
     );
   } catch {
     return;
