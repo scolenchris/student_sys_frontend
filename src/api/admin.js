@@ -78,9 +78,10 @@ export const exportCourseAssignments = () =>
   });
 
 // --- 导出教师信息 (Excel) ---
-export const exportTeachers = () =>
+export const exportTeachers = (params) =>
   api.get("/teachers/export", {
-    responseType: "blob", // 必须声明接收二进制流
+    params, // 将参数传递给后端
+    responseType: "blob",
   });
 
 // --- 获取学生学籍证明 ---
@@ -125,3 +126,10 @@ export const getAdminScoreList = (params) =>
 
 // 3. 保存成绩
 export const saveAdminScores = (data) => api.post("/score_entry/save", data);
+
+// 导出学生信息或者模板
+export const exportStudents = (params) =>
+  api.get("/students/export", {
+    params,
+    responseType: "blob",
+  });

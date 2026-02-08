@@ -480,11 +480,19 @@ const handleResetPwd = async (id) => {
 
 const handleExport = async () => {
   try {
-    const res = await exportTeachers();
+    // 传入当前选中的学年
+    const res = await exportTeachers({
+      academic_year: currentAcademicYear.value,
+    });
+
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "教师信息表.xlsx");
+    // 文件名可以由后端 header 决定，也可以这里自己定
+    link.setAttribute(
+      "download",
+      `${currentAcademicYear.value}学年_教师信息表.xlsx`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

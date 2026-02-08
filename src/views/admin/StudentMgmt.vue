@@ -18,6 +18,10 @@
             :value="c.id"
           />
         </el-select>
+        <el-button type="warning" plain @click="handleExport">
+          <el-icon style="margin-right: 5px"><Download /></el-icon>
+          下载模板/备份
+        </el-button>
       </div>
 
       <div>
@@ -211,18 +215,19 @@ import {
   getClasses,
   importStudentsExcel,
   getStudentCertificate,
+  exportStudents,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
-import { Document } from "@element-plus/icons-vue";
+import { Document, Upload, Download } from "@element-plus/icons-vue";
 
 // ... (保留 formatClassName, getStatusType 等辅助函数)
 const formatClassName = (c) =>
   `${String(c.entry_year).slice(-2)}级(${String(c.class_num).padStart(
     2,
-    "0"
+    "0",
   )})班`;
 const getStatusType = (s) =>
-  ({ 在读: "success", 休学: "warning", 转出: "info" }[s] || "");
+  ({ 在读: "success", 休学: "warning", 转出: "info" })[s] || "";
 
 const studentData = ref([]);
 const classes = ref([]);
@@ -354,7 +359,7 @@ const handleUpload = async (param) => {
     loadingInstance.close();
 
     ElMessage.success(
-      `导入成功！新增: ${res.data.added} 人，更新: ${res.data.updated} 人`
+      `导入成功！新增: ${res.data.added} 人，更新: ${res.data.updated} 人`,
     );
 
     // 导入后自动刷新班级列表(因为可能新增了班级)和学生列表
@@ -388,6 +393,35 @@ const handlePrintCert = async (row) => {
   } catch (err) {
     loading.close();
     ElMessage.error("生成失败，请检查是否缺少学籍号或模板文件");
+  }
+};
+
+// 处理导出逻辑
+const handleExport = async () => {
+  try {
+    // 传入当前筛选的班级ID，如果没选则是全部
+    const res = await exportStudents({ class_id: filterClassId.value });
+
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+
+    // 简单的文件名处理
+    let fname = "学生名单_备份.xlsx";
+    if (filterClassId.value) {
+      // 尝试从 classes 列表中找到班级名
+      const cls = classes.value.find((c) => c.id === filterClassId.value);
+      if (cls) fname = `${formatClassName(cls)}_学生名单.xlsx`;
+    }
+
+    link.setAttribute("download", fname);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    ElMessage.error("导出失败，请稍后重试");
+    console.error(err);
   }
 };
 </script>
