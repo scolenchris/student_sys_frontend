@@ -133,3 +133,5 @@ export const exportStudents = (params) =>
     params,
     responseType: "blob",
   });
+
+export const deleteStudent = (id) => api.delete(`/students/${id}`);

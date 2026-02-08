@@ -90,6 +90,17 @@
           >
             编辑
           </el-button>
+          <el-popconfirm
+            title="确定要删除该学生吗？"
+            description="此操作将同步删除该学生的所有成绩记录，且不可恢复！"
+            confirm-button-text="确定删除"
+            cancel-button-text="取消"
+            @confirm="handleDelete(scope.row)"
+          >
+            <template #reference>
+              <el-button size="small" type="danger" plain>删除</el-button>
+            </template>
+          </el-popconfirm>
           <el-button
             type="warning"
             link
@@ -216,6 +227,7 @@ import {
   importStudentsExcel,
   getStudentCertificate,
   exportStudents,
+  deleteStudent,
 } from "../../api/admin";
 import { ElMessage } from "element-plus";
 import { Document, Upload, Download } from "@element-plus/icons-vue";
@@ -422,6 +434,18 @@ const handleExport = async () => {
   } catch (err) {
     ElMessage.error("导出失败，请稍后重试");
     console.error(err);
+  }
+};
+
+const handleDelete = async (row) => {
+  try {
+    await deleteStudent(row.id);
+    ElMessage.success("删除成功");
+    // 重新加载列表
+    fetchStudents();
+  } catch (err) {
+    console.error(err);
+    ElMessage.error(err.response?.data?.msg || "删除失败");
   }
 };
 </script>
